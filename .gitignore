@@ -1,0 +1,22 @@
+# .NET / C#
+bin/
+obj/
+*.user
+*.userosscache
+*.sln.docstates
+.vs/
+.vscode/
+*.DotSettings.user
+
+# Node / Frontend
+node_modules/
+dist/
+dist-ssr/
+*.local
+.npm
+.eslintcache
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
