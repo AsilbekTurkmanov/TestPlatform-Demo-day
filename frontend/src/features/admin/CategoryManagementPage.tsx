@@ -11,6 +11,7 @@ import {
   Binary,
   Languages,
   Atom,
+  Info,
 } from 'lucide-react';
 import { categoryApi } from '../../api/services';
 import { useTranslation } from '../../i18n/I18nContext';
@@ -91,7 +92,7 @@ export const CategoryManagementPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['categoriesAdmin'] });
       queryClient.invalidateQueries({ queryKey: ['categoriesAll'] });
       setIsModalOpen(false);
-      toastSuccess(editingCategory ? 'Kategoriya yangilandi' : 'Yangi kategoriya yaratildi');
+      toastSuccess(editingCategory ? 'Kategoriya muvaffaqiyatli yangilandi' : 'Yangi kategoriya yaratildi');
     },
     onError: (err: any) => {
       toastError(err.message || 'Xatolik yuz berdi');
@@ -148,7 +149,7 @@ export const CategoryManagementPage: React.FC = () => {
               <CardBody className="p-6 space-y-4">
                 <div className="flex items-center justify-between">
                   <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold"
+                    className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold shadow-xs"
                     style={{ backgroundColor: cat.color || '#3B82F6' }}
                   >
                     <FolderTree className="w-5 h-5" />
@@ -167,7 +168,7 @@ export const CategoryManagementPage: React.FC = () => {
                 </div>
 
                 {cat.descriptionUz && (
-                  <p className="text-xs text-slate-500 line-clamp-2">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">
                     {cat.descriptionUz}
                   </p>
                 )}
@@ -178,7 +179,7 @@ export const CategoryManagementPage: React.FC = () => {
                   variant="ghost"
                   size="sm"
                   onClick={() => openEditModal(cat)}
-                  className="text-blue-600"
+                  className="text-blue-600 dark:text-blue-400 font-semibold"
                 >
                   <Edit className="w-4 h-4" />
                 </Button>
@@ -186,7 +187,7 @@ export const CategoryManagementPage: React.FC = () => {
                   variant="ghost"
                   size="sm"
                   onClick={() => setDeleteCategoryId(cat.id)}
-                  className="text-red-600"
+                  className="text-red-600 dark:text-red-400 font-semibold"
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>
@@ -200,68 +201,86 @@ export const CategoryManagementPage: React.FC = () => {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={editingCategory ? 'Kategoriyani tahrirlash' : t('admin.addCategory')}
+        title={editingCategory ? 'Kategoriyani tahrirlash' : 'Yangi kategoriya qo\'shish'}
+        maxWidth="lg"
       >
         <form
           onSubmit={(e) => {
             e.preventDefault();
             saveMutation.mutate();
           }}
-          className="space-y-4"
+          className="space-y-5"
         >
+          {/* Uzbek Name */}
           <Input
-            label="Nomi (O'zbekcha) *"
+            label="🇺🇿 Kategoriya nomi (O'zbekcha) *"
+            placeholder="Masalan: Sun'iy intellekt va Ma'lumotlar fani"
+            helperText="Platformada o'zbek tilida ko'rinadigan asosiy nom"
             value={nameUz}
             onChange={(e) => setNameUz(e.target.value)}
             required
           />
 
+          {/* Russian Name */}
           <Input
-            label="Nomi (Русский) *"
+            label="🇷🇺 Название категории (Русский) *"
+            placeholder="Например: Искусственный интеллект и Анализ данных"
+            helperText="Название категории на русском языке"
             value={nameRu}
             onChange={(e) => setNameRu(e.target.value)}
             required
           />
 
+          {/* English Name */}
           <Input
-            label="Nomi (English) *"
+            label="🇬🇧 Category Name (English) *"
+            placeholder="e.g. Artificial Intelligence & Data Science"
+            helperText="Category title in English"
             value={nameEn}
             onChange={(e) => setNameEn(e.target.value)}
             required
           />
 
-          <div className="space-y-1.5">
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-              Tavsif (O'zbekcha)
+          {/* Description */}
+          <div className="space-y-1.5 text-left">
+            <label className="block text-xs font-bold uppercase tracking-wide text-slate-800 dark:text-slate-200">
+              📝 Kategoriya tavsifi (Ixtiyoriy)
             </label>
             <textarea
               value={descriptionUz}
               onChange={(e) => setDescriptionUz(e.target.value)}
               rows={2}
-              className="block w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900/90 text-slate-900 dark:text-slate-100 text-sm p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Masalan: Mashinaviy o'rganish, neyron tarmoqlar va katta ma'lumotlar bo'yicha testlar..."
+              className="block w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 text-sm p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Talabalar katalogda ko'radigan qisqacha tavsif
+            </p>
           </div>
 
-          <div className="space-y-1.5">
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-              Rang (HEX)
+          {/* Color Picker */}
+          <div className="space-y-1.5 text-left">
+            <label className="block text-xs font-bold uppercase tracking-wide text-slate-800 dark:text-slate-200">
+              🎨 Kategoriya rangi (HEX)
             </label>
             <div className="flex items-center gap-3">
               <input
                 type="color"
                 value={color}
                 onChange={(e) => setColor(e.target.value)}
-                className="w-10 h-10 rounded-xl cursor-pointer border-0"
+                className="w-12 h-11 rounded-xl cursor-pointer border border-slate-300 dark:border-slate-700 p-1 bg-white dark:bg-slate-900"
               />
               <Input
                 value={color}
                 onChange={(e) => setColor(e.target.value)}
                 placeholder="#3B82F6"
+                helperText="Belgilar va yorliqlar uchun foydalaniladi"
               />
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+          {/* Buttons */}
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
             <Button
               type="button"
               variant="outline"
@@ -273,8 +292,10 @@ export const CategoryManagementPage: React.FC = () => {
               type="submit"
               variant="primary"
               isLoading={saveMutation.isPending}
+              leftIcon={<PlusCircle className="w-4 h-4" />}
+              className="font-bold shadow-md shadow-blue-500/20"
             >
-              {t('common.save')}
+              {editingCategory ? t('common.save') : 'Kategoriyani saqlash'}
             </Button>
           </div>
         </form>

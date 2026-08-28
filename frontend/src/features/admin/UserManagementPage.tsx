@@ -11,6 +11,9 @@ import {
   Trash2,
   Power,
   Lock,
+  Mail,
+  Phone,
+  User as UserIcon,
 } from 'lucide-react';
 import { userApi } from '../../api/services';
 import { useTranslation } from '../../i18n/I18nContext';
@@ -166,7 +169,7 @@ export const UserManagementPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         <div className="max-w-md w-full">
           <Input
-            placeholder={t('common.search')}
+            placeholder="Foydalanuvchi ismi yoki emaili bo'yicha qidirish..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             leftIcon={<Search className="w-4 h-4" />}
@@ -241,7 +244,7 @@ export const UserManagementPage: React.FC = () => {
                         <img
                           src={u.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.fullName)}&background=3B82F6&color=fff`}
                           alt={u.fullName}
-                          className="w-9 h-9 rounded-xl object-cover"
+                          className="w-9 h-9 rounded-xl object-cover ring-2 ring-blue-500/20"
                         />
                         <div>
                           <div className="font-bold text-slate-900 dark:text-slate-100">{u.fullName}</div>
@@ -321,47 +324,55 @@ export const UserManagementPage: React.FC = () => {
           className="space-y-4"
         >
           <Input
-            label={t('auth.fullName')}
+            label={t('auth.fullName') + " *"}
+            placeholder="Masalan: Sardor Aliyev"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
+            leftIcon={<UserIcon className="w-4 h-4" />}
             required
           />
 
           <Input
-            label={t('auth.email')}
+            label={t('auth.email') + " *"}
             type="email"
+            placeholder="sardor@testplatform.uz"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            leftIcon={<Mail className="w-4 h-4" />}
             required
           />
 
           <Input
-            label={editingUser ? 'Yangi parol (agar o\'zgartirmoqchi bo\'lsangiz)' : t('auth.password')}
+            label={editingUser ? 'Yangi parol (ixtiyoriy)' : t('auth.password') + " *"}
             type="password"
+            placeholder="Kamida 6 ta belgi"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            leftIcon={<Lock className="w-4 h-4" />}
             required={!editingUser}
           />
 
-          <div className="space-y-1.5">
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-              {t('common.role')}
+          <div className="space-y-1.5 text-left">
+            <label className="block text-xs font-bold uppercase tracking-wide text-slate-800 dark:text-slate-200">
+              {t('common.role')} *
             </label>
             <select
               value={role}
               onChange={(e) => setRole(Number(e.target.value) as UserRole)}
-              className="block w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900/90 text-slate-900 dark:text-slate-100 text-sm p-2.5"
+              className="block w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-sm p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value={UserRole.Student}>{t('common.student')}</option>
-              <option value={UserRole.Teacher}>{t('common.teacher')}</option>
-              <option value={UserRole.Admin}>{t('common.admin')}</option>
+              <option value={UserRole.Student}>🎓 {t('common.student')}</option>
+              <option value={UserRole.Teacher}>👨‍🏫 {t('common.teacher')}</option>
+              <option value={UserRole.Admin}>🛡️ {t('common.admin')}</option>
             </select>
           </div>
 
           <Input
             label={t('auth.phoneNumber')}
+            placeholder="+998 90 123 45 67"
             value={phoneNumber}
             onChange={(e) => setPhoneNumber(e.target.value)}
+            leftIcon={<Phone className="w-4 h-4" />}
           />
 
           <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
