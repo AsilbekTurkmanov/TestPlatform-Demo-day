@@ -45,15 +45,19 @@ export const Modal: React.FC<ModalProps> = ({
     <div className="fixed inset-0 z-50 overflow-y-auto">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
+        className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm transition-opacity animate-in fade-in duration-200"
         onClick={onClose}
+        aria-hidden="true"
       />
 
       {/* Dialog container */}
-      <div className="flex min-h-full items-center justify-center p-4 sm:p-6 text-center">
+      <div
+        className="relative z-10 flex min-h-full items-center justify-center p-4 sm:p-6 text-center"
+        onClick={onClose}
+      >
         <div
           className={clsx(
-            'w-full transform rounded-2xl bg-white dark:bg-slate-900 text-left align-middle shadow-2xl transition-all border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-200 overflow-hidden',
+            'w-full transform rounded-2xl bg-white dark:bg-slate-900 text-left align-middle shadow-2xl transition-all border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-200 overflow-hidden relative',
             maxWidthClasses[maxWidth]
           )}
           onClick={(e) => e.stopPropagation()}
@@ -62,8 +66,9 @@ export const Modal: React.FC<ModalProps> = ({
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800/80">
               <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">{title}</h3>
               <button
+                type="button"
                 onClick={onClose}
-                className="rounded-lg p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="rounded-lg p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>

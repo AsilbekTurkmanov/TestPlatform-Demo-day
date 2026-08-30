@@ -382,14 +382,106 @@ export const questionApi = {
   },
 };
 
+const computeAttemptResult = (att: any, id: string): ResultDetail => {
+  const examId = att?.examId || mockExams[0].id;
+  const exam = mockExams.find((e) => e.id === examId) || mockExams[0];
+  const questions: Question[] = mockQuestions[examId] || mockQuestions[mockExams[0].id] || [];
+  const savedAnswers: SavedAnswer[] = att?.savedAnswers || [];
+
+  let totalPoints = 0;
+  let earnedPoints = 0;
+  let correctCount = 0;
+  let incorrectCount = 0;
+  let unansweredCount = 0;
+
+  const reviews = questions.map((q) => {
+    totalPoints += q.points;
+    const userAns = savedAnswers.find((a: any) => a.questionId === q.id);
+    const selected = userAns?.selectedOptionIds || [];
+    const wasAnswered = selected.length > 0;
+
+    const correctOptionIds = q.options.filter((o) => o.isCorrect).map((o) => o.id);
+    let isCorrect = false;
+
+    if (wasAnswered) {
+      if (q.questionType === QuestionType.MultipleChoice) {
+        isCorrect =
+          selected.length === correctOptionIds.length &&
+          selected.every((optId: string) => correctOptionIds.includes(optId));
+      } else {
+        isCorrect = selected.length === 1 && correctOptionIds.includes(selected[0]);
+      }
+    }
+
+    if (!wasAnswered) {
+      unansweredCount++;
+    } else if (isCorrect) {
+      correctCount++;
+      earnedPoints += q.points;
+    } else {
+      incorrectCount++;
+    }
+
+    return {
+      questionId: q.id,
+      text: q.text,
+      questionType: q.questionType,
+      points: q.points,
+      earnedPoints: isCorrect ? q.points : 0,
+      order: q.order,
+      explanation: q.explanation,
+      codeSnippet: q.codeSnippet,
+      isCorrect,
+      wasAnswered,
+      selectedOptionIds: selected,
+      options: q.options.map((o) => ({
+        id: o.id,
+        text: o.text,
+        isCorrect: o.isCorrect,
+        isSelected: selected.includes(o.id),
+        order: o.order,
+      })),
+    };
+  });
+
+  const percentage = totalPoints > 0 ? Math.round((earnedPoints / totalPoints) * 100) : 0;
+  const passed = percentage >= (exam.passingScore || 70);
+  const startedTime = att?.startedAt ? new Date(att.startedAt).getTime() : Date.now() - 300000;
+  const timeSpentSeconds = Math.max(10, Math.floor((Date.now() - startedTime) / 1000));
+  const submittedAt = att?.submittedAt || new Date().toISOString();
+
+  return {
+    attemptId: id,
+    examId,
+    examTitle: att?.examTitle || exam.title,
+    categoryName: att?.categoryName || exam.categoryName,
+    categoryColor: exam.categoryColor || '#3B82F6',
+    difficulty: exam.difficulty,
+    passingScore: exam.passingScore,
+    startedAt: att?.startedAt || new Date(startedTime).toISOString(),
+    submittedAt,
+    status: AttemptStatus.Completed,
+    totalPoints,
+    earnedPoints,
+    percentage,
+    correctAnswersCount: correctCount,
+    incorrectAnswersCount: incorrectCount,
+    unansweredCount,
+    passed,
+    timeSpentSeconds,
+    allocatedSeconds: exam.durationMinutes * 60,
+    questionReviews: reviews,
+  };
+};
+
 export const attemptApi = {
   startExam: async (examId: string): Promise<ApiResponse<StartExamResponse>> => {
     try {
-      const res = await apiClient.post<ApiResponse<StartExamResponse>>(`/attempts/exams/${examId}/start`);
+      const res = await apiClient.post<ApiResponse<StartExamResponse>>(`/attempts/start?examId=${examId}`);
       return res.data;
     } catch {
       const exam = mockExams.find((e) => e.id === examId) || mockExams[0];
-      const questions = mockQuestions[exam.id] || mockQuestions['e1111111-1111-1111-1111-111111111111'];
+      const questions = mockQuestions[exam.id] || mockQuestions[mockExams[0].id] || [];
       const attemptId = 'att_' + Date.now();
       const expiresAt = new Date(Date.now() + exam.durationMinutes * 60 * 1000).toISOString();
 
@@ -474,7 +566,7 @@ export const attemptApi = {
     } catch {
       const stored = getStoredAttempts();
       if (stored[id]) {
-        stored[id].savedAnswers = stored[id].savedAnswers.filter((a: any) => a.questionId !== body.questionId);
+        stored[id].savedAnswers = (stored[id].savedAnswers || []).filter((a: any) => a.questionId !== body.questionId);
         stored[id].savedAnswers.push({
           questionId: body.questionId,
           selectedOptionIds: body.selectedOptionIds,
@@ -504,8 +596,11 @@ export const attemptApi = {
     } catch {
       const stored = getStoredAttempts();
       const att = stored[id];
+      const resultDetail = computeAttemptResult(att, id);
       if (att) {
         att.status = AttemptStatus.Completed;
+        att.submittedAt = resultDetail.submittedAt;
+        att.resultDetail = resultDetail;
         saveStoredAttempts(stored);
       }
       return {
@@ -513,18 +608,18 @@ export const attemptApi = {
         message: 'Exam submitted',
         data: {
           attemptId: id,
-          examId: att?.examId || mockExams[0].id,
-          examTitle: att?.examTitle || mockExams[0].title,
-          totalPoints: 40,
-          earnedPoints: 30,
-          percentage: 75,
-          correctAnswersCount: 3,
-          incorrectAnswersCount: 1,
-          unansweredCount: 0,
-          passed: true,
-          passingScore: 70,
-          timeSpentSeconds: 420,
-          submittedAt: new Date().toISOString(),
+          examId: resultDetail.examId,
+          examTitle: resultDetail.examTitle,
+          totalPoints: resultDetail.totalPoints,
+          earnedPoints: resultDetail.earnedPoints,
+          percentage: resultDetail.percentage,
+          correctAnswersCount: resultDetail.correctAnswersCount,
+          incorrectAnswersCount: resultDetail.incorrectAnswersCount,
+          unansweredCount: resultDetail.unansweredCount,
+          passed: resultDetail.passed,
+          passingScore: resultDetail.passingScore,
+          timeSpentSeconds: resultDetail.timeSpentSeconds,
+          submittedAt: resultDetail.submittedAt || new Date().toISOString(),
         },
         errors: [],
         timestamp: new Date().toISOString(),
@@ -536,7 +631,30 @@ export const attemptApi = {
       const res = await apiClient.get<ApiResponse<StudentAttempt[]>>('/attempts/my');
       return res.data;
     } catch {
-      const attempts: StudentAttempt[] = [
+      const stored = getStoredAttempts();
+      const storedCompleted: StudentAttempt[] = Object.entries(stored)
+        .filter(([_, att]: [string, any]) => att && att.status === AttemptStatus.Completed && att.resultDetail)
+        .map(([id, att]: [string, any]) => {
+          const res = att.resultDetail;
+          return {
+            id,
+            examId: res.examId,
+            examTitle: res.examTitle,
+            categoryName: res.categoryName,
+            categoryColor: res.categoryColor,
+            difficulty: res.difficulty,
+            startedAt: res.startedAt,
+            submittedAt: res.submittedAt,
+            status: AttemptStatus.Completed,
+            totalPoints: res.totalPoints,
+            earnedPoints: res.earnedPoints,
+            percentage: res.percentage,
+            passed: res.passed,
+            timeSpentSeconds: res.timeSpentSeconds,
+          };
+        });
+
+      const defaultAttempts: StudentAttempt[] = [
         {
           id: 'att_demo_1',
           examId: mockExams[0].id,
@@ -570,7 +688,14 @@ export const attemptApi = {
           timeSpentSeconds: 2100,
         },
       ];
-      return { success: true, message: 'Success', data: attempts, errors: [], timestamp: new Date().toISOString() };
+
+      return {
+        success: true,
+        message: 'Success',
+        data: [...storedCompleted, ...defaultAttempts],
+        errors: [],
+        timestamp: new Date().toISOString(),
+      };
     }
   },
 };
@@ -581,50 +706,9 @@ export const resultApi = {
       const res = await apiClient.get<ApiResponse<ResultDetail>>(`/results/${id}`);
       return res.data;
     } catch {
-      const questions = mockQuestions['e1111111-1111-1111-1111-111111111111'];
-      const reviews = questions.map((q, idx) => ({
-        questionId: q.id,
-        text: q.text,
-        questionType: q.questionType,
-        points: q.points,
-        earnedPoints: idx < 3 ? q.points : 0,
-        order: q.order,
-        explanation: q.explanation,
-        codeSnippet: q.codeSnippet,
-        isCorrect: idx < 3,
-        wasAnswered: true,
-        selectedOptionIds: [q.options[0].id],
-        options: q.options.map((o) => ({
-          id: o.id,
-          text: o.text,
-          isCorrect: o.isCorrect,
-          isSelected: o.id === q.options[0].id,
-          order: o.order,
-        })),
-      }));
-
-      const resDetail: ResultDetail = {
-        attemptId: id,
-        examId: mockExams[0].id,
-        examTitle: mockExams[0].title,
-        categoryName: mockExams[0].categoryName,
-        categoryColor: '#3B82F6',
-        difficulty: ExamDifficulty.Medium,
-        passingScore: 70,
-        startedAt: '2026-02-25T10:00:00Z',
-        submittedAt: '2026-02-25T10:20:00Z',
-        status: AttemptStatus.Completed,
-        totalPoints: 40,
-        earnedPoints: 30,
-        percentage: 75,
-        correctAnswersCount: 3,
-        incorrectAnswersCount: 1,
-        unansweredCount: 0,
-        passed: true,
-        timeSpentSeconds: 1200,
-        allocatedSeconds: 1800,
-        questionReviews: reviews,
-      };
+      const stored = getStoredAttempts();
+      const att = stored[id];
+      const resDetail = att?.resultDetail || computeAttemptResult(att, id);
       return { success: true, message: 'Success', data: resDetail, errors: [], timestamp: new Date().toISOString() };
     }
   },
