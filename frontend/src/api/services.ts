@@ -49,7 +49,17 @@ export const authApi = {
       return res.data;
     } catch {
       // Mock Fallback
-      const found = mockUsers.find((u) => u.email.toLowerCase() === body.email.toLowerCase()) || mockUsers[2];
+      const emailLower = (body.email || '').trim().toLowerCase();
+      let found = mockUsers.find((u) => u.email.trim().toLowerCase() === emailLower);
+      if (!found) {
+        if (emailLower.includes('admin')) {
+          found = mockUsers.find((u) => u.role === UserRole.Admin) || mockUsers[0];
+        } else if (emailLower.includes('teacher')) {
+          found = mockUsers.find((u) => u.role === UserRole.Teacher) || mockUsers[1];
+        } else {
+          found = mockUsers.find((u) => u.role === UserRole.Student) || mockUsers[2];
+        }
+      }
       return {
         success: true,
         message: 'Mock Login Successful',
@@ -121,7 +131,7 @@ export const authApi = {
       return res.data;
     } catch {
       const userJson = localStorage.getItem('testplatform_user');
-      const user: User = userJson ? JSON.parse(userJson) : mockUsers[2];
+      const user: User = userJson ? JSON.parse(userJson) : (mockUsers.find((u) => u.role === UserRole.Student) || mockUsers[2]);
       return { success: true, message: 'Success', data: user, errors: [], timestamp: new Date().toISOString() };
     }
   },

@@ -23,13 +23,25 @@ interface AuthContextType {
   isAdmin: boolean;
 }
 
+const parseUserRole = (rawRole: any): UserRole => {
+  if (rawRole === UserRole.Admin || rawRole === 3 || rawRole === '3' || rawRole === 'Admin' || rawRole === 'admin') {
+    return UserRole.Admin;
+  }
+  if (rawRole === UserRole.Teacher || rawRole === 2 || rawRole === '2' || rawRole === 'Teacher' || rawRole === 'teacher') {
+    return UserRole.Teacher;
+  }
+  return UserRole.Student;
+};
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(() => {
     const saved = localStorage.getItem('testplatform_user');
     try {
-      return saved ? JSON.parse(saved) : null;
+      if (!saved) return null;
+      const parsed = JSON.parse(saved);
+      return { ...parsed, role: parseUserRole(parsed.role) };
     } catch {
       return null;
     }
@@ -45,8 +57,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
           const res = await authApi.getMe();
           if (res.success && res.data) {
-            setUser(res.data);
-            localStorage.setItem('testplatform_user', JSON.stringify(res.data));
+            const normalizedUser: User = {
+              ...res.data,
+              role: parseUserRole(res.data.role),
+            };
+            setUser(normalizedUser);
+            localStorage.setItem('testplatform_user', JSON.stringify(normalizedUser));
           }
         } catch {
           // Token expired or invalid
@@ -74,12 +90,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string): Promise<AuthResponse> => {
     const res = await authApi.login({ email, password });
     if (res.success && res.data) {
+      const normalizedRole = parseUserRole(res.data.role);
       setToken(res.data.accessToken);
       const loggedInUser: User = {
         id: res.data.id,
         fullName: res.data.fullName,
         email: res.data.email,
-        role: res.data.role,
+        role: normalizedRole,
         isActive: true,
         avatarUrl: res.data.avatarUrl,
         createdAt: new Date().toISOString(),
@@ -88,7 +105,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('testplatform_token', res.data.accessToken);
       localStorage.setItem('testplatform_refresh', res.data.refreshToken);
       localStorage.setItem('testplatform_user', JSON.stringify(loggedInUser));
-      return res.data;
+      return { ...res.data, role: normalizedRole };
     }
     throw new Error(res.message || 'Login failed');
   };

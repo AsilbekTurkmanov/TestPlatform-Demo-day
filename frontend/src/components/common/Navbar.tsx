@@ -59,9 +59,15 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
 
   const handleQuickLogin = async (email: string, pass: string) => {
     try {
-      await login(email, pass);
+      const auth = await login(email, pass);
       setDemoMenuOpen(false);
-      navigate('/dashboard');
+      if (auth.role === UserRole.Admin) {
+        navigate('/admin/dashboard');
+      } else if (auth.role === UserRole.Teacher) {
+        navigate('/teacher/dashboard');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (e) {
       console.error(e);
     }
