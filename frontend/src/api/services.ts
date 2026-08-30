@@ -392,11 +392,114 @@ export const questionApi = {
   },
 };
 
+const defaultResultsMap: Record<string, ResultDetail> = {
+  att_demo_1: {
+    attemptId: 'att_demo_1',
+    examId: mockExams[0].id,
+    examTitle: mockExams[0].title,
+    categoryName: 'IT & Dasturlash',
+    categoryColor: '#3B82F6',
+    difficulty: ExamDifficulty.Medium,
+    passingScore: 70,
+    startedAt: '2026-02-25T10:00:00Z',
+    submittedAt: '2026-02-25T10:20:00Z',
+    status: AttemptStatus.Completed,
+    totalPoints: 40,
+    earnedPoints: 30,
+    percentage: 75,
+    correctAnswersCount: 3,
+    incorrectAnswersCount: 1,
+    unansweredCount: 0,
+    passed: true,
+    timeSpentSeconds: 1200,
+    allocatedSeconds: 1800,
+    questionReviews: (mockQuestions[mockExams[0].id] || []).map((q, idx) => {
+      const isCorrect = idx < 3;
+      const correctOpt = q.options.find((o) => o.isCorrect) || q.options[0];
+      const incorrectOpt = q.options.find((o) => !o.isCorrect) || q.options[0];
+      const selectedId = isCorrect ? correctOpt.id : incorrectOpt.id;
+      return {
+        questionId: q.id,
+        text: q.text,
+        questionType: q.questionType,
+        points: q.points,
+        earnedPoints: isCorrect ? q.points : 0,
+        order: q.order,
+        explanation: q.explanation,
+        codeSnippet: q.codeSnippet,
+        isCorrect,
+        wasAnswered: true,
+        selectedOptionIds: [selectedId],
+        options: q.options.map((o) => ({
+          id: o.id,
+          text: o.text,
+          isCorrect: o.isCorrect,
+          isSelected: o.id === selectedId,
+          order: o.order,
+        })),
+      };
+    }),
+  },
+  att_demo_2: {
+    attemptId: 'att_demo_2',
+    examId: mockExams[1].id,
+    examTitle: mockExams[1].title,
+    categoryName: 'IT & Dasturlash',
+    categoryColor: '#3B82F6',
+    difficulty: ExamDifficulty.Hard,
+    passingScore: 75,
+    startedAt: '2026-02-20T14:00:00Z',
+    submittedAt: '2026-02-20T14:35:00Z',
+    status: AttemptStatus.Completed,
+    totalPoints: 40,
+    earnedPoints: 30,
+    percentage: 75,
+    correctAnswersCount: 3,
+    incorrectAnswersCount: 1,
+    unansweredCount: 0,
+    passed: true,
+    timeSpentSeconds: 2100,
+    allocatedSeconds: 2700,
+    questionReviews: (mockQuestions[mockExams[1].id] || []).map((q, idx) => {
+      const isCorrect = idx < 3;
+      const correctOpt = q.options.find((o) => o.isCorrect) || q.options[0];
+      const incorrectOpt = q.options.find((o) => !o.isCorrect) || q.options[0];
+      const selectedId = isCorrect ? correctOpt.id : incorrectOpt.id;
+      return {
+        questionId: q.id,
+        text: q.text,
+        questionType: q.questionType,
+        points: q.points,
+        earnedPoints: isCorrect ? q.points : 0,
+        order: q.order,
+        explanation: q.explanation,
+        codeSnippet: q.codeSnippet,
+        isCorrect,
+        wasAnswered: true,
+        selectedOptionIds: [selectedId],
+        options: q.options.map((o) => ({
+          id: o.id,
+          text: o.text,
+          isCorrect: o.isCorrect,
+          isSelected: o.id === selectedId,
+          order: o.order,
+        })),
+      };
+    }),
+  },
+};
+
 const computeAttemptResult = (att: any, id: string): ResultDetail => {
+  if (defaultResultsMap[id]) {
+    return defaultResultsMap[id];
+  }
+
   const examId = att?.examId || mockExams[0].id;
   const exam = mockExams.find((e) => e.id === examId) || mockExams[0];
   const questions: Question[] = mockQuestions[examId] || mockQuestions[mockExams[0].id] || [];
   const savedAnswers: SavedAnswer[] = att?.savedAnswers || [];
+
+  const hasUserAnswers = savedAnswers.length > 0;
 
   let totalPoints = 0;
   let earnedPoints = 0;
@@ -404,60 +507,96 @@ const computeAttemptResult = (att: any, id: string): ResultDetail => {
   let incorrectCount = 0;
   let unansweredCount = 0;
 
-  const reviews = questions.map((q) => {
+  const reviews = questions.map((q, idx) => {
     totalPoints += q.points;
-    const userAns = savedAnswers.find((a: any) => a.questionId === q.id);
-    const selected = userAns?.selectedOptionIds || [];
-    const wasAnswered = selected.length > 0;
 
-    const correctOptionIds = q.options.filter((o) => o.isCorrect).map((o) => o.id);
-    let isCorrect = false;
+    if (hasUserAnswers) {
+      const userAns = savedAnswers.find((a: any) => a.questionId === q.id);
+      const selected = userAns?.selectedOptionIds || [];
+      const wasAnswered = selected.length > 0;
 
-    if (wasAnswered) {
-      if (q.questionType === QuestionType.MultipleChoice) {
-        isCorrect =
-          selected.length === correctOptionIds.length &&
-          selected.every((optId: string) => correctOptionIds.includes(optId));
-      } else {
-        isCorrect = selected.length === 1 && correctOptionIds.includes(selected[0]);
+      const correctOptionIds = q.options.filter((o) => o.isCorrect).map((o) => o.id);
+      let isCorrect = false;
+
+      if (wasAnswered) {
+        if (q.questionType === QuestionType.MultipleChoice) {
+          isCorrect =
+            selected.length === correctOptionIds.length &&
+            selected.every((optId: string) => correctOptionIds.includes(optId));
+        } else {
+          isCorrect = selected.length === 1 && correctOptionIds.includes(selected[0]);
+        }
       }
-    }
 
-    if (!wasAnswered) {
-      unansweredCount++;
-    } else if (isCorrect) {
-      correctCount++;
-      earnedPoints += q.points;
+      if (!wasAnswered) {
+        unansweredCount++;
+      } else if (isCorrect) {
+        correctCount++;
+        earnedPoints += q.points;
+      } else {
+        incorrectCount++;
+      }
+
+      return {
+        questionId: q.id,
+        text: q.text,
+        questionType: q.questionType,
+        points: q.points,
+        earnedPoints: isCorrect ? q.points : 0,
+        order: q.order,
+        explanation: q.explanation,
+        codeSnippet: q.codeSnippet,
+        isCorrect,
+        wasAnswered,
+        selectedOptionIds: selected,
+        options: q.options.map((o) => ({
+          id: o.id,
+          text: o.text,
+          isCorrect: o.isCorrect,
+          isSelected: selected.includes(o.id),
+          order: o.order,
+        })),
+      };
     } else {
-      incorrectCount++;
-    }
+      const isCorrect = idx < Math.ceil(questions.length * 0.75);
+      const correctOpt = q.options.find((o) => o.isCorrect) || q.options[0];
+      const incorrectOpt = q.options.find((o) => !o.isCorrect) || q.options[0];
+      const selectedId = isCorrect ? correctOpt.id : incorrectOpt.id;
 
-    return {
-      questionId: q.id,
-      text: q.text,
-      questionType: q.questionType,
-      points: q.points,
-      earnedPoints: isCorrect ? q.points : 0,
-      order: q.order,
-      explanation: q.explanation,
-      codeSnippet: q.codeSnippet,
-      isCorrect,
-      wasAnswered,
-      selectedOptionIds: selected,
-      options: q.options.map((o) => ({
-        id: o.id,
-        text: o.text,
-        isCorrect: o.isCorrect,
-        isSelected: selected.includes(o.id),
-        order: o.order,
-      })),
-    };
+      if (isCorrect) {
+        correctCount++;
+        earnedPoints += q.points;
+      } else {
+        incorrectCount++;
+      }
+
+      return {
+        questionId: q.id,
+        text: q.text,
+        questionType: q.questionType,
+        points: q.points,
+        earnedPoints: isCorrect ? q.points : 0,
+        order: q.order,
+        explanation: q.explanation,
+        codeSnippet: q.codeSnippet,
+        isCorrect,
+        wasAnswered: true,
+        selectedOptionIds: [selectedId],
+        options: q.options.map((o) => ({
+          id: o.id,
+          text: o.text,
+          isCorrect: o.isCorrect,
+          isSelected: o.id === selectedId,
+          order: o.order,
+        })),
+      };
+    }
   });
 
   const percentage = totalPoints > 0 ? Math.round((earnedPoints / totalPoints) * 100) : 0;
   const passed = percentage >= (exam.passingScore || 70);
   const startedTime = att?.startedAt ? new Date(att.startedAt).getTime() : Date.now() - 300000;
-  const timeSpentSeconds = Math.max(10, Math.floor((Date.now() - startedTime) / 1000));
+  const timeSpentSeconds = att?.timeSpentSeconds || Math.max(10, Math.floor((Date.now() - startedTime) / 1000));
   const submittedAt = att?.submittedAt || new Date().toISOString();
 
   return {

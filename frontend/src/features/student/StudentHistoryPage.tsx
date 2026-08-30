@@ -120,31 +120,31 @@ export const StudentHistoryPage: React.FC = () => {
                     </td>
                     <td className="py-4 px-5">
                       <span
-                        className="text-[11px] font-bold px-2.5 py-0.5 rounded-md text-white"
+                        className="text-[11px] font-bold px-2.5 py-1 rounded-md text-white whitespace-nowrap inline-block shadow-xs"
                         style={{ backgroundColor: attempt.categoryColor || '#3B82F6' }}
                       >
                         {attempt.categoryName}
                       </span>
                     </td>
-                    <td className="py-4 px-5 font-black">
+                    <td className="py-4 px-5 font-black whitespace-nowrap">
                       <span className={attempt.passed ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}>
                         {attempt.percentage}% ({attempt.earnedPoints}/{attempt.totalPoints} {t('common.points')})
                       </span>
                     </td>
-                    <td className="py-4 px-5">
+                    <td className="py-4 px-5 whitespace-nowrap">
                       {attempt.passed ? (
                         <Badge variant="success" size="sm" dot>{t('results.passed')}</Badge>
                       ) : (
                         <Badge variant="danger" size="sm">{t('results.failed')}</Badge>
                       )}
                     </td>
-                    <td className="py-4 px-5 text-xs text-slate-500 dark:text-slate-400">
+                    <td className="py-4 px-5 text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
                       {Math.floor(attempt.timeSpentSeconds / 60)} daq {attempt.timeSpentSeconds % 60} son
                     </td>
-                    <td className="py-4 px-5 text-xs text-slate-500 dark:text-slate-400">
+                    <td className="py-4 px-5 text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
                       {new Date(attempt.startedAt).toLocaleDateString()}
                     </td>
-                    <td className="py-4 px-5 text-right">
+                    <td className="py-4 px-5 text-right whitespace-nowrap">
                       <Button
                         variant="ghost"
                         size="sm"
